@@ -7,6 +7,7 @@ var Transformation = function(obj, resolve, reject) {
     setTimeout(() => {
         if (cheerio) {
             obj.state += " & step 2";
+            this.debug('this is the object', obj)
             obj.data.Modified += ' & step 2 was too!';
             resolve(obj);
         }else{

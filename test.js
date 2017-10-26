@@ -1,6 +1,7 @@
 
 const flowProcessor = require('./core/FlowProcessor')
-
+//Write logic to find child folders of simpleCrawler and auto load flowProcessors
+//test public methods
 var fp = new flowProcessor('simpleCrawler');
 var crawlItem = {
     state: 'new',

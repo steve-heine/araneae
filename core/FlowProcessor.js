@@ -4,13 +4,13 @@ class FlowProcessor {
         this.projectHome = (__dirname + '/../crawl_projects/' + projectName + '/');
         this.projectSettings = this.loadProjectModule("project.js");
         this._q = asynclib.priorityQueue(async(crawlObj, done) => {
-            await this._promisify(this.processItem, crawlObj);
+            await this.processItem(crawlObj,0);
             done();
         }, this.projectSettings.FlowConcurrency || 1)
         this.processedItems = 0;
         this.skippedItems = 0;
     }
-    get itemsInQueue() { return this._q._tasks.length; }
+    get itemsInQueue() {      return this._q._tasks.length;}
     debug() { if (this.projectSettings.debug) { console.log(...arguments) } }
     enqueue(crawlObj, priority, cb) {
         priority = priority || 1;
@@ -20,8 +20,8 @@ class FlowProcessor {
     loadProjectModule(modulePath) { return require(this.projectHome + modulePath); }
     _promisify(method, parseObj) {
         return new Promise((resolve, reject) => {
-            let res = method.call(this, parseObj, resolve, reject);
-            if (res) { resolve(res); }
+            let resp = method.call(this, parseObj, resolve, reject);
+            if (resp) { resolve(resp); }
         });
     }
     async _transform(stepIdx, parseObj) {
@@ -32,7 +32,7 @@ class FlowProcessor {
         return parseObj
     }
     async processItem(crawlObj, stepIdx) {
-        stepIdx = (typeof stepIdx == 'function' ? 0 : stepIdx);
+        stepIdx = stepIdx || 0;
         this.debug(`\n--Transform Step: ${stepIdx +1 } [ ${this.projectSettings.TranformFlow[stepIdx].StepName} ]--\n\n Data In-->\n`,
             crawlObj, '\n\n--begin step--\n')
         try {

@@ -20,7 +20,7 @@ var projectSettings = {
             pollSecs: '30'
         }
     ],
-    FlowConcurrency:1,
+    FlowConcurrency:100,
     "TranformFlow": [{
             "StepName": "Step1",
             matchCondition: function(obj,res) {
