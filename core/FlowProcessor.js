@@ -1,18 +1,32 @@
 const asynclib = require('async');
-class FlowProcessor {
-    constructor(projectName) {
+class araneaFlowProcessor {
+    constructor(projectName, projectManager) {
+        this.projectManager = projectManager;
         this.projectHome = (__dirname + '/../crawl_projects/' + projectName + '/');
         this.projectSettings = this.loadProjectModule("project.js");
         this._q = asynclib.priorityQueue(async(crawlObj, done) => {
-            await this.processItem(crawlObj,0);
+            await this.processItem(crawlObj, 0);
             done();
         }, this.projectSettings.FlowConcurrency || 1)
-        this.processedItems = 0;
-        this.skippedItems = 0;
+        this.resetStats();
+        this.onComplete = this.projectSettings.onComplete || (() => {});
+        this._q.drain = () => { 
+            //emit an onComplete event
+            this.onComplete(this.projectManager) 
+        }
     }
-    get itemsInQueue() {      return this._q._tasks.length;}
+    resetStats() { this._stats = { processedItems: 0, skippedItems: 0, startTime: null }; }
+    get stats() {
+        return {
+            itemsInQueue: this._q._tasks.length,
+            processedItems: this._stats.processedItems,
+            skippedItems: this._stats.skippedItems,
+            startTime: this._stats.startTime
+        }
+    }
     debug() { if (this.projectSettings.debug) { console.log(...arguments) } }
     enqueue(crawlObj, priority, cb) {
+        this._stats.startTime = this._stats.startTime || new Date();
         priority = priority || 1;
         this.debug('Enqueued Item:', crawlObj)
         this._q.push(crawlObj, priority, cb);
@@ -20,7 +34,7 @@ class FlowProcessor {
     loadProjectModule(modulePath) { return require(this.projectHome + modulePath); }
     _promisify(method, parseObj) {
         return new Promise((resolve, reject) => {
-            let resp = method.call(this, parseObj, resolve, reject);
+            let resp = method.call(this.projectManager, parseObj, resolve, reject);
             if (resp) { resolve(resp); }
         });
     }
@@ -42,12 +56,12 @@ class FlowProcessor {
             if (stepIdx < (this.projectSettings.TranformFlow.length - 1))
                 await this.processItem(crawlObj, stepIdx + 1);
             else {
-                this.processedItems++;
+                this._stats.processedItems++;
             }
         } catch (e) {
-            this.skippedItems++;
+            this._stats.skippedItems++;
             this.debug(`Crawl object was rejected in step [${this.projectSettings.TranformFlow[stepIdx].StepName}] with message: `, e)
         }
     }
 }
-module.exports = FlowProcessor;
+module.exports = araneaFlowProcessor;
